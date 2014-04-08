@@ -134,21 +134,31 @@ public class MainActivity extends Activity {
 						if(msgID != ID){
 							//turn = true;
 							//String turnToPlay = message.substring(0,1);
-							String sym = message.substring(0,1);
-							String rowCol = message.substring(1);
-							changeButtonTexts(sym,rowCol);
-							enableAllButtons(true);
-							System.out.println(checkStatus()+"check status in MSG_SEND----------");
-							if(checkStatus()){
-								//poll.setEnabled(false);
-								enableAllButtons(false);
-								CharSequence text = winner+" won";
+							if(message.startsWith("Win")){
+								CharSequence text = message.substring(3)+" won";
 								Toast toast = Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT);
 								toast.show();
+							}
+							else{
+								String sym = message.substring(0,1);
+								String rowCol = message.substring(1);
+								changeButtonTexts(sym,rowCol);
+								enableAllButtons(true);
+								System.out.println(checkStatus()+"check status in MSG_SEND----------");
 							}
 						}
 						else if(msgID == ID){
 							enableAllButtons(false);
+						}
+						System.out.println("print count before checking status!!----------" + count);
+						System.out.println("print status------------"+checkStatus());
+						
+						if(checkStatus()){
+							//poll.setEnabled(false);
+							enableAllButtons(false);
+							CharSequence text = winner+" won";
+							Toast toast = Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT);
+							toast.show();
 						}
 					}
 					else{
@@ -164,14 +174,24 @@ public class MainActivity extends Activity {
 					toast.show();
 				}
 				else if(msg.what == MSG_REGISTER){
-					System.out.println("In register!!!---------");
+					/*System.out.println("In register!!!---------");
 					result = (String)msg.obj;
 					String [] tokens = result.split(":");
 					ID = Integer.parseInt(tokens[1].trim());
 					
 					CharSequence text = result;
 					Toast toast = Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT);
+					toast.show();*/
+					System.out.println("In register!!!---------");
+					result = (String)msg.obj;
+					String [] tokens = result.split(":");
+					ID = Integer.parseInt(tokens[1].trim());
+					System.out.println("ID="+ID);
+					CharSequence text = result;
+					Toast toast = Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT);
 					toast.show();
+					joinTask jt = new joinTask();
+					jt.execute();
 				}
 				
 				else if(msg.what == MSG_JOIN) {
@@ -257,12 +277,12 @@ public class MainActivity extends Activity {
 			Letter = token[1];
 			
 			startTask st = new startTask();
-			joinTask jt = new joinTask();
+			//joinTask jt = new joinTask();
 			//legalTask lt = new legalTask();
 			
 			st.execute("");
 			//lt.execute("");
-			jt.execute("");
+			//jt.execute("");
 				
 			System.out.println("Game start!");
 		}
@@ -337,6 +357,37 @@ public class MainActivity extends Activity {
 		
 	}
 	
+private class winTask extends AsyncTask<String, Void, String>{
+		
+		@Override
+		protected void onPreExecute() {}
+		
+		@Override
+		protected String doInBackground(String... arg0) {
+			//the string of the button
+			//turn = false;
+			String move = arg0[0];
+			String rval = null;
+			try {
+				System.out.println("ID ---------"+ID);
+				String command = "SEND "+ID +" "+group+" "+ "Win"+winner;
+				DatagramPacket txPacket = new DatagramPacket(command.getBytes(),
+						command.length(), serverSocketAddress);
+				// send the packet through the socket to the server
+				socket.send(txPacket);
+				
+			} catch (SocketException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			return rval;
+		}
+	}
+	
 	private class task extends AsyncTask<String, Void, String>{
 		
 		@Override
@@ -373,6 +424,8 @@ public class MainActivity extends Activity {
 				//enableAllButtons(false);
 				
 				if(checkStatus()){
+					winTask t = new winTask();
+					t.execute("");
 					CharSequence text = winner+" won";
 					Toast toast = Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT);
 					toast.show();
@@ -497,7 +550,7 @@ public class MainActivity extends Activity {
 	//check if there is a winner on board, if there is one, set his symbol to winner string;
 	public boolean checkStatus(){
 		System.out.println("CHECK");
-		if(count > 4){
+		if(count >= 3){
 			System.out.println("CHECKING");
 			if(!((String) button11.getText()).startsWith("__") && (button11.getText().equals(button12.getText())) && (button11.getText().equals(button13.getText()))){
 				winner = (String) button11.getText();
